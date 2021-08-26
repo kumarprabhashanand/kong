@@ -1266,21 +1266,21 @@ return {
       end
 
       -- X-Forwarded-* Headers
+      -- Only store them in ngx.ctx and actually set to upstream header in access.after
+      -- so that plugins that terminates the requests doesn't got those headers
       local http_x_forwarded_for = var.http_x_forwarded_for
       if http_x_forwarded_for then
-        set_header("x-forwarded-for", http_x_forwarded_for .. ", " ..
-                                       realip_remote_addr)
-
+        ctx.upstream_x_forwarded_for = http_x_forwarded_for .. ", " ..
+                                        realip_remote_addr
       else
-        set_header("x-forwarded-for", var.remote_addr)
+        ctx.upstream_x_forwarded_for = var.remote_addr
       end
 
-      set_header("x-forwarded-proto", forwarded_proto)
-      set_header("x-forwarded-host", forwarded_host)
-      set_header("x-forwarded-port", forwarded_port)
-      set_header("x-forwarded-path", forwarded_path)
-      set_header("x-forwarded-prefix", forwarded_prefix)
-      ctx.upstream_x_forwarded_prefix = forwarded_prefix -- COMPAT: PDK
+      ctx.upstream_x_forwarded_proto = forwarded_proto
+      ctx.upstream_x_forwarded_host = forwarded_host
+      ctx.upstream_x_forwarded_port = forwarded_port
+      ctx.upstream_x_forwarded_path = forwarded_path
+      ctx.upstream_x_forwarded_prefix = forwarded_prefix
 
       -- At this point, the router and `balancer_setup_stage1` have been
       -- executed; detect requests that need to be redirected from `proxy_pass`
@@ -1358,6 +1358,25 @@ return {
 
         return ngx.exit(500)
       end
+
+      -- the nginx grpc module does not offer a way to override the
+      -- :authority pseudo-header; use our internal API to do so
+      local upstream_host = var.upstream_host
+      local upstream_scheme = var.upstream_scheme
+
+      if upstream_scheme == "grpc" or upstream_scheme == "grpcs" then
+        ok, err = kong.service.request.set_header(":authority", upstream_host)
+        if not ok then
+          log(ERR, "failed to set :authority header: ", err)
+        end
+      end
+
+      set_header("x-forwarded-for", ctx.upstream_x_forwarded_for)
+      set_header("x-forwarded-proto", ctx.upstream_x_forwarded_proto)
+      set_header("x-forwarded-host", ctx.upstream_x_forwarded_host)
+      set_header("x-forwarded-port", ctx.upstream_x_forwarded_port)
+      set_header("x-forwarded-path", ctx.upstream_x_forwarded_path)
+      set_header("x-forwarded-prefix", ctx.upstream_x_forwarded_prefix)
 
       -- clear hop-by-hop request headers:
       for _, header_name in csv(var.http_connection) do
