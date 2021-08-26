@@ -35,6 +35,7 @@ local header       = ngx.header
 local timer_at     = ngx.timer.at
 local timer_every  = ngx.timer.every
 local subsystem    = ngx.config.subsystem
+local set_header   = ngx.req.set_header
 local clear_header = ngx.req.clear_header
 local unpack       = unpack
 local escape       = require("kong.tools.uri").escape
@@ -1267,18 +1268,19 @@ return {
       -- X-Forwarded-* Headers
       local http_x_forwarded_for = var.http_x_forwarded_for
       if http_x_forwarded_for then
-        var.upstream_x_forwarded_for = http_x_forwarded_for .. ", " ..
-                                       realip_remote_addr
+        set_header("x-forwarded-for", http_x_forwarded_for .. ", " ..
+                                       realip_remote_addr)
 
       else
-        var.upstream_x_forwarded_for = var.remote_addr
+        set_header("x-forwarded-for", var.remote_addr)
       end
 
-      var.upstream_x_forwarded_proto  = forwarded_proto
-      var.upstream_x_forwarded_host   = forwarded_host
-      var.upstream_x_forwarded_port   = forwarded_port
-      var.upstream_x_forwarded_path   = forwarded_path
-      var.upstream_x_forwarded_prefix = forwarded_prefix
+      set_header("x-forwarded-proto", forwarded_proto)
+      set_header("x-forwarded-host", forwarded_host)
+      set_header("x-forwarded-port", forwarded_port)
+      set_header("x-forwarded-path", forwarded_path)
+      set_header("x-forwarded-prefix", forwarded_prefix)
+      ctx.upstream_x_forwarded_prefix = forwarded_prefix -- COMPAT: PDK
 
       -- At this point, the router and `balancer_setup_stage1` have been
       -- executed; detect requests that need to be redirected from `proxy_pass`
@@ -1375,7 +1377,8 @@ return {
       -- add te header only when client requests trailers (proxy removes it)
       for _, header_name in csv(var.http_te) do
         if header_name == "trailers" then
-          var.upstream_te = "trailers"
+          var.upstream_te = "trailers" -- for setting headers in upstream
+          ctx.upstream_te = "trailers" -- for read back in header_filter.before
           break
         end
       end
@@ -1412,7 +1415,7 @@ return {
       end
 
       -- remove trailer response header when client didn't ask for them
-      if var.upstream_te == "" and var.upstream_http_trailer then
+      if not ctx.upstream_te and var.upstream_http_trailer then
         header["Trailer"] = nil
       end
 
