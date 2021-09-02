@@ -139,7 +139,6 @@ server {
         proxy_set_header      Host               $upstream_host;
         proxy_set_header      Upgrade            $upstream_upgrade;
         proxy_set_header      Connection         $upstream_connection;
-        proxy_set_header      X-Real-IP          $remote_addr;
         proxy_pass_header     Server;
         proxy_pass_header     Date;
         proxy_ssl_name        $upstream_host;
@@ -164,7 +163,6 @@ server {
         proxy_set_header      Host               $upstream_host;
         proxy_set_header      Upgrade            $upstream_upgrade;
         proxy_set_header      Connection         $upstream_connection;
-        proxy_set_header      X-Real-IP          $remote_addr;
         proxy_pass_header     Server;
         proxy_pass_header     Date;
         proxy_ssl_name        $upstream_host;
@@ -189,7 +187,6 @@ server {
         proxy_set_header      Host               $upstream_host;
         proxy_set_header      Upgrade            $upstream_upgrade;
         proxy_set_header      Connection         $upstream_connection;
-        proxy_set_header      X-Real-IP          $remote_addr;
         proxy_pass_header     Server;
         proxy_pass_header     Date;
         proxy_ssl_name        $upstream_host;
@@ -214,7 +211,6 @@ server {
         proxy_set_header      Host               $upstream_host;
         proxy_set_header      Upgrade            $upstream_upgrade;
         proxy_set_header      Connection         $upstream_connection;
-        proxy_set_header      X-Real-IP          $remote_addr;
         proxy_pass_header     Server;
         proxy_pass_header     Date;
         proxy_ssl_name        $upstream_host;
@@ -232,7 +228,6 @@ server {
         set $kong_proxy_mode 'grpc';
 
         grpc_set_header      TE                 $upstream_te;
-        grpc_set_header      X-Real-IP          $remote_addr;
         grpc_pass_header     Server;
         grpc_pass_header     Date;
         grpc_ssl_name        $upstream_host;
@@ -260,7 +255,6 @@ server {
         proxy_set_header      Host               $upstream_host;
         proxy_set_header      Upgrade            $upstream_upgrade;
         proxy_set_header      Connection         $upstream_connection;
-        proxy_set_header      X-Real-IP          $remote_addr;
         proxy_pass_header     Server;
         proxy_pass_header     Date;
         proxy_ssl_name        $upstream_host;

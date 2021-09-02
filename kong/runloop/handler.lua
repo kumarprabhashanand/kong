@@ -1265,6 +1265,9 @@ return {
         var.upstream_connection = "keep-alive"
       end
 
+      local remote_addr = var.remote_addr
+      ctx.upstream_x_real_ip = remote_addr
+
       -- X-Forwarded-* Headers
       -- Only store them in ngx.ctx and actually set to upstream header in access.after
       -- so that plugins that terminates the requests doesn't got those headers
@@ -1273,7 +1276,7 @@ return {
         ctx.upstream_x_forwarded_for = http_x_forwarded_for .. ", " ..
                                         realip_remote_addr
       else
-        ctx.upstream_x_forwarded_for = var.remote_addr
+        ctx.upstream_x_forwarded_for = remote_addr
       end
 
       ctx.upstream_x_forwarded_proto = forwarded_proto
@@ -1370,6 +1373,8 @@ return {
           log(ERR, "failed to set :authority header: ", err)
         end
       end
+
+      set_header("x-real-ip", ctx.upstream_x_real_ip)
 
       set_header("x-forwarded-for", ctx.upstream_x_forwarded_for)
       set_header("x-forwarded-proto", ctx.upstream_x_forwarded_proto)
